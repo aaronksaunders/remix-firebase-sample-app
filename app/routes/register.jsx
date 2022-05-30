@@ -2,7 +2,7 @@ import { auth } from "../firebase-service";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Form, useActionData, Link } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
-import { sessionLogin } from "~/fb.sessions.server";
+import { sessionLogin, fbSessionCookie } from "~/fb.sessions.server";
 
 //create a stylesheet ref for the auth.css file
 export let links = () => {
@@ -31,14 +31,16 @@ export let action = async ({ request }) => {
       const resp = await sessionLogin(idToken);
 
       if (!resp.error) {
+        const cookieHeader = request.headers.get("Cookie");
+        const cookie = (await fbSessionCookie.parse(cookieHeader)) || {};
+        cookie.token = resp.sessionCookie;
         // let's send the user to the main page after login
         return redirect("/", {
           headers: {
-            "Set-Cookie": resp.sessionCookie,
+            "Set-Cookie": await fbSessionCookie.serialize(cookie),
           },
         });
       } else {
-        //   console.log("login", { user, error: resp.error });
         return { user, error: resp.error };
       }
     }

@@ -1,5 +1,5 @@
 import { auth } from "../firebase-service";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import {
   Form,
   Link,
@@ -8,7 +8,7 @@ import {
   useCatch,
 } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
-import { sessionLogin } from "../fb.sessions.server";
+import { fbSessionCookie, sessionLogin } from "../fb.sessions.server";
 
 //create a stylesheet ref for the auth.css file
 export let links = () => {
@@ -43,6 +43,9 @@ export function CatchBoundary() {
 
 // use loader to check for existing session, if found, send the user to the blogs site
 export async function loader({ request }) {
+    const cookieHeader = request.headers.get("Cookie");
+    const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
+    console.log(sessionCookie);
   return {};
 }
 
@@ -52,6 +55,8 @@ export let action = async ({ request }) => {
   let formData = await request.formData();
   let email = formData.get("email");
   let password = formData.get("password");
+
+  await signOut(auth);
 
   try {
     const { user, error } = await signInWithEmailAndPassword(
@@ -68,7 +73,16 @@ export let action = async ({ request }) => {
         // let's send the user to the main page after login
         return redirect("/", {
           headers: {
-            "Set-Cookie": "session=" + resp.sessionCookie + "; HttpOnly",
+            "Set-Cookie": await fbSessionCookie.serialize({
+                token: resp.sessionCookie,
+                expires: new Date(Date.now() + 60_000),
+                httpOnly: true,
+                maxAge: 60,
+                path: "/",
+                sameSite: "lax",
+                secrets: ["s3cret1"],
+                secure: true,
+            }),
           },
         });
       } else {
@@ -85,7 +99,6 @@ export default function Login() {
   // to use our actionData error in our form, we need to pull in our action data
   const actionData = useActionData();
 
-  console.log("actionData", actionData);
   return (
     <div className="loginContainer">
       <div className="authTitle">

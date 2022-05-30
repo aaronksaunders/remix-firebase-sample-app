@@ -1,24 +1,26 @@
 import { useLoaderData, Form } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
 
-import { auth } from "../firebase-service";
+import { auth, db } from "../firebase-service";
+import { collection, getDocs } from "firebase/firestore";
 import { isSessionValid, fbSessionCookie } from "~/fb.sessions.server";
 
 // use loader to check for existing session
 export async function loader({ request }) {
-  try {
-    const { decodedClaims, error, success } = await isSessionValid(request);
+  const { decodedClaims, error } = await isSessionValid(request, "/login");
 
-    if (success) {
-      const data = { user: auth.currentUser, error, decodedClaims };
-      return json(data);
-    } else {
-      console.log("isSessionValid", error);
-      return redirect("/login");
-    }
-  } catch {
-    return redirect("/login");
-  }
+  // const db = getFirestore(getApp());
+  const querySnapshot = await getDocs(collection(db, "tryreactfire"));
+  const responseData = [];
+  querySnapshot.forEach((doc) => {
+    console.log(doc.id, " => ", doc.data());
+    responseData.push({
+      id: doc.id,
+      ...doc.data(),
+    });
+  });
+  const data = { user: auth.currentUser, error, decodedClaims, responseData };
+  return json(data);
 }
 
 export async function action({ request }) {
@@ -61,6 +63,11 @@ export default function Index() {
         <Form method="post">
           <button type="submit">LOGOUT</button>
         </Form>
+      </div>
+      <div>
+        <pre>
+          {JSON.stringify(data,null,2)}
+        </pre>
       </div>
     </div>
   );

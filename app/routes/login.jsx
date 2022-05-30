@@ -1,11 +1,16 @@
 import { auth } from "../firebase-service";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
 import {
   Form,
   Link,
   useActionData,
-  useLoaderData,
   useCatch,
+  useFetcher,
 } from "@remix-run/react";
 import { json, redirect } from "@remix-run/node";
 import { fbSessionCookie, sessionLogin } from "../fb.sessions.server";
@@ -43,53 +48,59 @@ export function CatchBoundary() {
 
 // use loader to check for existing session, if found, send the user to the blogs site
 export async function loader({ request }) {
-    const cookieHeader = request.headers.get("Cookie");
-    const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
-    console.log(sessionCookie);
+  const cookieHeader = request.headers.get("Cookie");
+  const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
+  console.log(sessionCookie);
   return {};
 }
 
+const setCookieAndRedirect = async (sessionCookie) => {
+  return redirect("/", {
+    headers: {
+      "Set-Cookie": await fbSessionCookie.serialize({
+        token: sessionCookie,
+        expires: new Date(Date.now() + 60_000),
+        httpOnly: true,
+        maxAge: 60,
+        path: "/",
+        sameSite: "lax",
+        secrets: ["s3cret1"],
+        secure: true,
+      }),
+    },
+  });
+};
 // our action function will be launched when the submit button is clicked
 // this will sign in our firebase user and create our session and cookie using user.getIDToken()
 export let action = async ({ request }) => {
   let formData = await request.formData();
   let email = formData.get("email");
+  let googleLogin = formData.get("google-login");
   let password = formData.get("password");
 
   await signOut(auth);
 
   try {
-    const { user, error } = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    // if signin was successful then we have a user
-    if (user) {
-      const idToken = await auth.currentUser.getIdToken();
-      const resp = await sessionLogin(idToken);
+    if (googleLogin) {
+      const resp = await sessionLogin(formData.get("idToken"));
+      return await setCookieAndRedirect(resp.sessionCookie);
+    } else {
+      const authResp = await signInWithEmailAndPassword(auth, email, password);
 
-      if (!resp.error) {
-        // let's send the user to the main page after login
-        return redirect("/", {
-          headers: {
-            "Set-Cookie": await fbSessionCookie.serialize({
-                token: resp.sessionCookie,
-                expires: new Date(Date.now() + 60_000),
-                httpOnly: true,
-                maxAge: 60,
-                path: "/",
-                sameSite: "lax",
-                secrets: ["s3cret1"],
-                secure: true,
-            }),
-          },
-        });
-      } else {
-        return { user, error: resp.error };
+      // if signin was successful then we have a user
+      if (authResp.user) {
+        const idToken = await auth.currentUser.getIdToken();
+        const resp = await sessionLogin(idToken);
+
+        if (!resp.error) {
+          // let's send the user to the main page after login
+          return await setCookieAndRedirect(resp.sessionCookie);
+        } else {
+          return { user: authResp.user, error: resp.error };
+        }
       }
+      return { user: authResp.user };
     }
-    return { user, error };
   } catch (error) {
     return { error: { message: error?.message } };
   }
@@ -98,6 +109,22 @@ export let action = async ({ request }) => {
 export default function Login() {
   // to use our actionData error in our form, we need to pull in our action data
   const actionData = useActionData();
+  const fetcher = useFetcher();
+
+  /**
+   * 
+   */
+  const signInWithGoogle = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider)
+      .then(async (res) => {
+        const idToken = await res.user.getIdToken();
+        fetcher.submit({ idToken: idToken,  'google-login': true }, { method: "post" });
+      })
+      .catch((err) => {
+        console.log('signInWithGoogle',err);
+      });
+  };
 
   return (
     <div className="loginContainer">
@@ -120,8 +147,20 @@ export default function Login() {
           name="password"
           required
         />
-        <button className="loginButton" type="submit">
+        <button
+          className="loginButton"
+          name="email-login"
+          value="true"
+          type="submit"
+        >
           Login
+        </button>
+        <button
+          className="loginButton"
+          type="button"
+          onClick={()=> signInWithGoogle()}
+        >
+          Login with Google
         </button>
       </Form>
       <div className="additionalLinks">

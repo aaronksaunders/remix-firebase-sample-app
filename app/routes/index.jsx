@@ -4,12 +4,12 @@ import { json, redirect } from "@remix-run/node";
 import { auth, db } from "../firebase-service";
 import { collection, getDocs } from "firebase/firestore";
 import { isSessionValid, fbSessionCookie } from "~/fb.sessions.server";
+import { getAuth } from "firebase/auth";
 
 // use loader to check for existing session
 export async function loader({ request }) {
   const { decodedClaims, error } = await isSessionValid(request, "/login");
 
-  // const db = getFirestore(getApp());
   const querySnapshot = await getDocs(collection(db, "tryreactfire"));
   const responseData = [];
   querySnapshot.forEach((doc) => {
@@ -19,7 +19,8 @@ export async function loader({ request }) {
       ...doc.data(),
     });
   });
-  const data = { user: auth.currentUser, error, decodedClaims, responseData };
+
+  const data = { user: getAuth().currentUser, error, decodedClaims, responseData };
   return json(data);
 }
 
@@ -53,8 +54,8 @@ export let meta = () => {
 // https://remix.run/guides/routing#index-routes
 export default function Index() {
   const data = useLoaderData();
-  let greeting = data?.user?.email
-    ? "Logged In As: " + data.user.email
+  let greeting = data?.decodedClaims
+    ? "Logged In As: " + data?.decodedClaims?.email
     : "Log In My: friend";
   return (
     <div>

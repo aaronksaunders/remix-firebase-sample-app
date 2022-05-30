@@ -1,7 +1,14 @@
-# Welcome to Remix!
+# Welcome to Firebase Remix Example
 
-- [Remix Docs](https://remix.run/docs)
+- A sampme [Remix](https://remix.run/docs) Application showing account creation, login, logout and forgot password using Firebase
 
+## Firebase Config and How it Works
+- the application uses the `firebase client SDK` to get the `token` from user authentication and saves it in a `cookie` after the server, using the `firebase-admin` sdk to verify it is still valid
+- add values to the `app/firebase-config.json` file to support client side API
+- for the server, you will need to download the service account information into a file `app/service-account.json`
+
+### Google Login 
+- cannot happen on the server so were do the login on the client side and then pass the `idToken` to the server to create the same cookie as we do with a normal login
 ## Development
 
 From your terminal:

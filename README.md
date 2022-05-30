@@ -1,14 +1,52 @@
 # Welcome to Firebase Remix Example
 
-- A sampme [Remix](https://remix.run/docs) Application showing account creation, login, logout and forgot password using Firebase
+A sample [Remix](https://remix.run/docs) Application showing account creation, login, logout and forgot password using Firebase
 
 ## Firebase Config and How it Works
-- the application uses the `firebase client SDK` to get the `token` from user authentication and saves it in a `cookie` after the server, using the `firebase-admin` sdk to verify it is still valid
+
+- the application uses the [`firebase client SDK`](https://firebase.google.com/docs/auth/web/manage-users) to get the `token` from user authentication and saves it in a `cookie` after the server, using the [`firebase-admin SDK`](https://firebase.google.com/docs/auth/admin/manage-cookies) sdk to verify it is still valid
 - add values to the `app/firebase-config.json` file to support client side API
 - for the server, you will need to download the service account information into a file `app/service-account.json`
 
-### Google Login 
-- cannot happen on the server so were do the login on the client side and then pass the `idToken` to the server to create the same cookie as we do with a normal login
+### Google Login
+
+- cannot happen on the server so were do the login on the client side and then pass the `idToken` to the server to create the same cookie as we do with a normal login.
+- use the `useFetcher` hook to call the `ActionFuntion` and pass appropriate properties as formData
+
+```javascript
+// login.jsx - client
+const signInWithGoogle = () => {
+  const provider = new GoogleAuthProvider();
+  signInWithPopup(auth, provider)
+    .then(async (res) => {
+      const idToken = await res.user.getIdToken();
+      fetcher.submit(
+        {
+          "idToken": idToken,
+          "google-login": true,
+        },
+        { "method": "post" }
+      );
+    })
+    .catch((err) => {
+      console.log("signInWithGoogle", err);
+    });
+};
+```
+
+This snippet of code is from the `ActionFunction`
+
+```javascript
+let googleLogin = formData.get("google-login");
+...
+if (googleLogin) {
+    const resp = await sessionLogin(formData.get("idToken"));
+    return await setCookieAndRedirect(resp.sessionCookie);
+} else {
+    // handle emailPassword login
+}
+```
+
 ## Development
 
 From your terminal:

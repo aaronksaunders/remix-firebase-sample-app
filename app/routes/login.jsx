@@ -106,7 +106,7 @@ export default function Login() {
 
   return (
     <div className="ui container" style={{paddingTop: 40}}>
-      <h3>Login</h3>
+      <h3>Remix Login With Firebase, Email & Google Auth</h3>
       <Form method="post" className="ui form centered">
         <div className="field">
           <label htmlFor="email">Email</label>

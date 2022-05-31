@@ -28,21 +28,7 @@ export let action = async ({ request }) => {
     if (!signUpError) {
       const idToken = await auth.currentUser.getIdToken();
 
-      const resp = await sessionLogin(idToken);
-
-      if (!resp.error) {
-        const cookieHeader = request.headers.get("Cookie");
-        const cookie = (await fbSessionCookie.parse(cookieHeader)) || {};
-        cookie.token = resp.sessionCookie;
-        // let's send the user to the main page after login
-        return redirect("/", {
-          headers: {
-            "Set-Cookie": await fbSessionCookie.serialize(cookie),
-          },
-        });
-      } else {
-        return { user, error: resp.error };
-      }
+      return await sessionLogin(idToken, "/");
     }
     // perform firebase register
     return { user, signUpError };

@@ -48,9 +48,6 @@ export function CatchBoundary() {
 
 // use loader to check for existing session, if found, send the user to the blogs site
 export async function loader({ request }) {
-  const cookieHeader = request.headers.get("Cookie");
-  const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
-  console.log(sessionCookie);
   return {};
 }
 

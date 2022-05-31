@@ -4,7 +4,7 @@ A sample [Remix](https://remix.run/docs) Application showing account creation, l
 
 ## Firebase Config and How it Works
 
-- the application uses the [`firebase client SDK`](https://firebase.google.com/docs/auth/web/manage-users) to get the `token` from user authentication and saves it in a `cookie` after the server, using the [`firebase-admin SDK`](https://firebase.google.com/docs/auth/admin/manage-cookies) sdk to verify it is still valid
+- the application uses the [`firebase client SDK`](https://firebase.google.com/docs/auth/web/manage-users) to get the `token` from user authentication and saves it in a `cookie` on the server, using the [`firebase-admin SDK`](https://firebase.google.com/docs/auth/admin/manage-cookies) sdk to verify the token in the cookie is still valid
 - add values to the `app/firebase-config.json` file to support client side API
 - for the server, you will need to download the service account information into a file `app/service-account.json`
 

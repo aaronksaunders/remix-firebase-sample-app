@@ -54,22 +54,7 @@ export async function loader({ request }) {
   return {};
 }
 
-const setCookieAndRedirect = async (sessionCookie) => {
-  return redirect("/", {
-    headers: {
-      "Set-Cookie": await fbSessionCookie.serialize({
-        token: sessionCookie,
-        expires: new Date(Date.now() + 60_000),
-        httpOnly: true,
-        maxAge: 60,
-        path: "/",
-        sameSite: "lax",
-        secrets: ["s3cret1"],
-        secure: true,
-      }),
-    },
-  });
-};
+
 // our action function will be launched when the submit button is clicked
 // this will sign in our firebase user and create our session and cookie using user.getIDToken()
 export let action = async ({ request }) => {
@@ -82,24 +67,16 @@ export let action = async ({ request }) => {
 
   try {
     if (googleLogin) {
-      const resp = await sessionLogin(formData.get("idToken"));
-      return await setCookieAndRedirect(resp.sessionCookie);
+      return await sessionLogin(formData.get("idToken"), "/");
     } else {
       const authResp = await signInWithEmailAndPassword(auth, email, password);
 
       // if signin was successful then we have a user
       if (authResp.user) {
         const idToken = await auth.currentUser.getIdToken();
-        const resp = await sessionLogin(idToken);
-
-        if (!resp.error) {
-          // let's send the user to the main page after login
-          return await setCookieAndRedirect(resp.sessionCookie);
-        } else {
-          return { user: authResp.user, error: resp.error };
-        }
+        return await sessionLogin(idToken, "/");
       }
-      return { user: authResp.user };
+
     }
   } catch (error) {
     return { error: { message: error?.message } };

@@ -2,6 +2,12 @@
 
 A sample [Remix](https://remix.run/docs) Application showing account creation, login, logout and forgot password using Firebase
 
+---
+
+check out video here: https://www.youtube.com/watch?v=ZUVztkkY218
+
+---
+
 ## Firebase Config and How it Works
 
 - the application uses the [`firebase client SDK`](https://firebase.google.com/docs/auth/web/manage-users) to get the `token` from user authentication and saves it in a `cookie` on the server, using the [`firebase-admin SDK`](https://firebase.google.com/docs/auth/admin/manage-cookies) sdk to verify the token in the cookie is still valid

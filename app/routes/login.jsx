@@ -54,7 +54,6 @@ export async function loader({ request }) {
   return {};
 }
 
-
 // our action function will be launched when the submit button is clicked
 // this will sign in our firebase user and create our session and cookie using user.getIDToken()
 export let action = async ({ request }) => {
@@ -76,7 +75,6 @@ export let action = async ({ request }) => {
         const idToken = await auth.currentUser.getIdToken();
         return await sessionLogin(idToken, "/");
       }
-
     }
   } catch (error) {
     return { error: { message: error?.message } };
@@ -89,60 +87,73 @@ export default function Login() {
   const fetcher = useFetcher();
 
   /**
-   * 
+   *
    */
   const signInWithGoogle = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
       .then(async (res) => {
         const idToken = await res.user.getIdToken();
-        fetcher.submit({ idToken: idToken,  'google-login': true }, { method: "post" });
+        fetcher.submit(
+          { idToken: idToken, "google-login": true },
+          { method: "post" }
+        );
       })
       .catch((err) => {
-        console.log('signInWithGoogle',err);
+        console.log("signInWithGoogle", err);
       });
   };
 
   return (
-    <div className="loginContainer">
-      <div className="authTitle">
-        <h1>Login</h1>
-      </div>
-      <Form method="post">
-        <label htmlFor="email">Email</label>
-        <input
-          className="loginInput"
-          type="email"
-          name="email"
-          placeholder="you@awesome.dev"
-          required
-        />
-        <label htmlFor="password">Password</label>
-        <input
-          className="loginInput"
-          type="password"
-          name="password"
-          required
-        />
+    <div className="ui container" style={{paddingTop: 40}}>
+      <h3>Login</h3>
+      <Form method="post" className="ui form centered">
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            name="email"
+            placeholder="me@mail.com"
+            required
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            required
+          />
+        </div>
         <button
-          className="loginButton"
+          className="ui button"
           name="email-login"
           value="true"
           type="submit"
         >
-          Login
+          Login With Email
         </button>
         <button
-          className="loginButton"
+          className="ui button"
           type="button"
-          onClick={()=> signInWithGoogle()}
+          onClick={() => signInWithGoogle()}
         >
+          <i className="icon google"></i>
           Login with Google
         </button>
       </Form>
-      <div className="additionalLinks">
-        <Link to="/register">Register</Link>
-        <Link to="/forgot">Forgot Password?</Link>
+      <div className="ui divider"></div>
+      <div className="ui centered grid" style={{paddingTop:16}}>
+        <div className="six wide column">
+          <Link className="ui button right floated" to="/register">
+            Register
+          </Link>
+        </div>
+        <div className="six wide column">
+          <Link className="ui button" to="/forgot">
+            Forgot Password?
+          </Link>
+        </div>
       </div>
       <div className="errors">
         {actionData?.error ? actionData?.error?.message : null}

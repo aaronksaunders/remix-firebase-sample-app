@@ -20,7 +20,12 @@ export async function loader({ request }) {
     });
   });
 
-  const data = { user: getAuth().currentUser, error, decodedClaims, responseData };
+  const data = {
+    user: getAuth().currentUser,
+    error,
+    decodedClaims,
+    responseData,
+  };
   return json(data);
 }
 
@@ -58,17 +63,28 @@ export default function Index() {
     ? "Logged In As: " + data?.decodedClaims?.email
     : "Log In My: friend";
   return (
-    <div>
-      <div className="remix__page">{greeting}</div>
-      <div>
-        <Form method="post">
-          <button type="submit">LOGOUT</button>
-        </Form>
+    <div className="ui container centered" style={{ paddingTop: 40 }}>
+      <div className="ui segment">
+        <h3>{greeting}</h3>
+        <div>
+          <Form method="post">
+            <button className="ui button" type="submit">
+              LOGOUT
+            </button>
+          </Form>
+        </div>
       </div>
-      <div>
-        <pre>
-          {JSON.stringify(data,null,2)}
-        </pre>
+      <div className="ui segment">
+        <div className="ui medium header">User Authentication Information</div>
+        <p>Name: {data?.decodedClaims?.name || "** Name Missing **"}</p>
+        <p>Email: {data?.decodedClaims?.email}</p>
+        <p>Login Using: {data?.decodedClaims?.firebase?.sign_in_provider}</p>
+      </div>
+      <div className="ui segment">
+        <div className="ui medium header">Querying Firestore Database</div>
+        {data?.responseData?.map((m) => 
+         <div className="ui segment" key={m?.id}>{m?.id} : {m?.name}</div>
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,9 @@ A sample [Remix](https://remix.run/docs) Application showing account creation, l
 - add values to the `app/firebase-config.json` file to support client side API
 - for the server, you will need to download the service account information into a file `app/service-account.json`
 
+
+<image src=https://github.com/aaronksaunders/remix-firebase-sample-app/blob/main/Screen%20Shot%202022-05-31%20at%202.31.20%20AM.png width=600px/>
+
 ### Google Login
 
 - cannot happen on the server so were do the login on the client side and then pass the `idToken` to the server to create the same cookie as we do with a normal login.

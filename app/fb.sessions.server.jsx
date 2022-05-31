@@ -3,7 +3,7 @@ import { createCookie, redirect } from "@remix-run/node"; // or "@remix-run/clou
 
 // Initialize Firebase
 // ---------------------
-import * as admin from 'firebase-admin';
+import * as admin from "firebase-admin";
 var serviceAccount = require("./service-account.json");
 if (admin.apps.length === 0) {
   admin.initializeApp({
@@ -23,7 +23,7 @@ export const fbSessionCookie = createCookie("session", {
 /**
  * checks that the current session is a valid session be getting the token
  * from the session cookie and validating it with firebase
- * 
+ *
  * @param {*} param0
  * @returns
  */
@@ -49,12 +49,12 @@ export const isSessionValid = async (request, redirectTo) => {
 
 /**
  * set the cookie on the header and redirect to the specified route
- * 
- * @param {*} sessionCookie 
- * @param {*} redirectTo 
- * @returns 
+ *
+ * @param {*} sessionCookie
+ * @param {*} redirectTo
+ * @returns
  */
-const setCookieAndRedirect = async (sessionCookie, redirectTo="/") => {
+const setCookieAndRedirect = async (sessionCookie, redirectTo = "/") => {
   return redirect(redirectTo, {
     headers: {
       "Set-Cookie": await fbSessionCookie.serialize({
@@ -71,14 +71,13 @@ const setCookieAndRedirect = async (sessionCookie, redirectTo="/") => {
   });
 };
 
-
 /**
  * login the session by verifying the token, if all is good create/set cookie
  * and redirect to the appropriate route
- * 
- * @param {*} idToken 
- * @param {*} redirectTo 
- * @returns 
+ *
+ * @param {*} idToken
+ * @param {*} redirectTo
+ * @returns
  */
 export const sessionLogin = async (idToken, redirectTo) => {
   return admin
@@ -89,11 +88,11 @@ export const sessionLogin = async (idToken, redirectTo) => {
     .then(
       (sessionCookie) => {
         // Set cookie policy for session cookie.
-        return setCookieAndRedirect(sessionCookie, redirectTo)
+        return setCookieAndRedirect(sessionCookie, redirectTo);
       },
       (error) => {
         return {
-          error: `sessionLogin UNAUTHORIZED REQUEST!: ${error.message}`,
+          error: `sessionLogin error!: ${error.message}`,
         };
       }
     );
@@ -101,8 +100,8 @@ export const sessionLogin = async (idToken, redirectTo) => {
 
 /**
  * revokes the session cookie from the firebase admin instance
- * @param {*} request 
- * @returns 
+ * @param {*} request
+ * @returns
  */
 export const sessionLogout = async (request) => {
   const cookieHeader = request.headers.get("Cookie");

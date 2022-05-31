@@ -8,7 +8,10 @@ import { getAuth } from "firebase/auth";
 
 // use loader to check for existing session
 export async function loader({ request }) {
-  const { decodedClaims, error } = await isSessionValid(request, "/login");
+  const { 
+    decodedClaims, 
+    error 
+  } = await isSessionValid(request, "/login");
 
   const querySnapshot = await getDocs(collection(db, "tryreactfire"));
   const responseData = [];

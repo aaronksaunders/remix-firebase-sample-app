@@ -54,25 +54,25 @@ export async function loader({ request }) {
 // our action function will be launched when the submit button is clicked
 // this will sign in our firebase user and create our session and cookie using user.getIDToken()
 export let action = async ({ request }) => {
-  let formData = await request.formData();
-  let email = formData.get("email");
-  let googleLogin = formData.get("google-login");
-  let password = formData.get("password");
+let formData = await request.formData();
+let email = formData.get("email");
+let googleLogin = formData.get("google-login");
+let password = formData.get("password");
 
   await signOut(auth);
 
   try {
-    if (googleLogin) {
-      return await sessionLogin(formData.get("idToken"), "/");
-    } else {
-      const authResp = await signInWithEmailAndPassword(auth, email, password);
+if (googleLogin) {
+  return await sessionLogin(formData.get("idToken"), "/");
+} else {
+  const authResp = await signInWithEmailAndPassword(auth, email, password);
 
-      // if signin was successful then we have a user
-      if (authResp.user) {
-        const idToken = await auth.currentUser.getIdToken();
-        return await sessionLogin(idToken, "/");
-      }
-    }
+  // if signin was successful then we have a user
+  if (authResp.user) {
+    const idToken = await auth.currentUser.getIdToken();
+    return await sessionLogin(idToken, "/");
+  }
+}
   } catch (error) {
     return { error: { message: error?.message } };
   }

@@ -50,6 +50,10 @@ if (googleLogin) {
 }
 ```
 
+## Installing Semantic UI CSS Files and Icons
+
+To get the icons to work I had to copy the assets into the public directory after install. The solutions i found in the discord channel lead me to believe there is no other solution at this time. See `package.json` for more details
+
 ## Development
 
 From your terminal:

@@ -6,8 +6,8 @@
     "build": "remix build && npm run install:fonts",
     "dev": "remix dev  && npm run install:fonts",
     "start": "remix-serve build",
-    "postinstall": "remix setup node && npm run install:fonts",
-    "install:fonts": "cp -r app/styles/themes/ public/build/_assets/themes/"
+    "postinstall": "remix setup node && mkdir -p public/build/_assets/themes/ && npm run install:fonts",
+    "install:fonts": "rsync -r app/styles/themes/ public/build/_assets/themes/"
   },
   "dependencies": {
     "@remix-run/node": "^1.5.1",

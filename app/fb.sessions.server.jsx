@@ -16,18 +16,14 @@ if (admin.apps.length === 0) {
  */
 const { getSession, commitSession, destroySession } =
   createCookieSessionStorage({
-    // a Cookie from `createCookie` or the CookieOptions to create one
     cookie: {
-      //firebase token
       name: "fb:token",
-
-      // all of these are optional
       expires: new Date(Date.now() + 600),
       httpOnly: true,
       maxAge: 600,
       path: "/",
       sameSite: "lax",
-      secrets: ["cr@z7"],
+      secrets: ["f3cr@z7"],
       secure: true,
     },
   });
@@ -49,7 +45,6 @@ export const isSessionValid = async (request, redirectTo) => {
       .verifySessionCookie(session.get("idToken"), true /** checkRevoked */);
     return { success: true, decodedClaims };
   } catch (error) {
-    console.log(error);
     // Session cookie is unavailable or invalid. Force user to login.
     // return { error: error?.message };
     throw redirect(redirectTo, {

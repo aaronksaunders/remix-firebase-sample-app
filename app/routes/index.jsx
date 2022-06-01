@@ -3,8 +3,9 @@ import { json, redirect } from "@remix-run/node";
 
 import { auth, db } from "../firebase-service";
 import { collection, getDocs } from "firebase/firestore";
-import { isSessionValid, fbSessionCookie } from "~/fb.sessions.server";
+import { isSessionValid } from "~/fb.sessions.server";
 import { getAuth } from "firebase/auth";
+import { sessionLogout } from "../fb.sessions.server";
 
 // use loader to check for existing session
 export async function loader({ request }) {
@@ -35,20 +36,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   await auth.signOut();
 
-  const cookieHeader = request.headers.get("Cookie");
-  const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
-
-  const newValues = {
-    ...sessionCookie,
-    token: null,
-    expires: new Date(Date.now()),
-    maxAge: -1,
-  };
-  return redirect("/login", {
-    headers: {
-      "Set-Cookie": await fbSessionCookie.serialize(newValues),
-    },
-  });
+return await sessionLogout(request);
 }
 
 // https://remix.run/api/conventions#meta

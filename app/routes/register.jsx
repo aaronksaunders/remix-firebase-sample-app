@@ -1,8 +1,7 @@
 import { auth } from "../firebase-service";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Form, useActionData, Link } from "@remix-run/react";
-import { json, redirect } from "@remix-run/node";
-import { sessionLogin, fbSessionCookie } from "~/fb.sessions.server";
+import { sessionLogin } from "~/fb.sessions.server";
 
 //create a stylesheet ref for the auth.css file
 export let links = () => {
@@ -19,19 +18,11 @@ export let action = async ({ request }) => {
   await auth.signOut();
   try {
     //setup user data
-    let {
-      session: sessionData,
-      user,
-      error: signUpError,
-    } = await createUserWithEmailAndPassword(auth, email, password);
+    await createUserWithEmailAndPassword(auth, email, password);
 
-    if (!signUpError) {
-      const idToken = await auth.currentUser.getIdToken();
+    const idToken = await auth.currentUser.getIdToken();
 
-      return await sessionLogin(idToken, "/");
-    }
-    // perform firebase register
-    return { user, signUpError };
+    return await sessionLogin(request, idToken, "/");
   } catch (error) {
     return { error: { message: error?.message } };
   }
@@ -40,32 +31,23 @@ export let action = async ({ request }) => {
 export default function Register() {
   const actionData = useActionData();
   return (
-    <div className="ui container" style={{paddingTop: 40}}>
-        <h3>Register</h3>
+    <div className="ui container" style={{ paddingTop: 40 }}>
+      <h3>Register</h3>
       <Form method="post" className="ui form centered">
-      <div className="field">
+        <div className="field">
           <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="me@mail.com"
-            required
-          />
+          <input type="email" name="email" placeholder="me@mail.com" required />
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            name="password"
-            required
-          />
+          <input type="password" name="password" required />
         </div>
         <button className="ui button" type="submit">
           Register
         </button>
       </Form>
       <div className="ui divider"></div>
-      <div className="ui centered grid" style={{paddingTop:12}}>
+      <div className="ui centered grid" style={{ paddingTop: 12 }}>
         <Link className="ui button right floated" to="/login">
           Already Registered?
         </Link>

@@ -12,8 +12,7 @@ import {
   useCatch,
   useFetcher,
 } from "@remix-run/react";
-import { json, redirect } from "@remix-run/node";
-import { fbSessionCookie, sessionLogin } from "../fb.sessions.server";
+import { sessionLogin } from "../fb.sessions.server";
 
 //create a stylesheet ref for the auth.css file
 export let links = () => {
@@ -54,25 +53,25 @@ export async function loader({ request }) {
 // our action function will be launched when the submit button is clicked
 // this will sign in our firebase user and create our session and cookie using user.getIDToken()
 export let action = async ({ request }) => {
-let formData = await request.formData();
-let email = formData.get("email");
-let googleLogin = formData.get("google-login");
-let password = formData.get("password");
+  let formData = await request.formData();
+  let email = formData.get("email");
+  let googleLogin = formData.get("google-login");
+  let password = formData.get("password");
 
   await signOut(auth);
 
   try {
-if (googleLogin) {
-  return await sessionLogin(formData.get("idToken"), "/");
-} else {
-  const authResp = await signInWithEmailAndPassword(auth, email, password);
+    if (googleLogin) {
+      return await sessionLogin(request, formData.get("idToken"), "/");
+    } else {
+      const authResp = await signInWithEmailAndPassword(auth, email, password);
 
-  // if signin was successful then we have a user
-  if (authResp.user) {
-    const idToken = await auth.currentUser.getIdToken();
-    return await sessionLogin(idToken, "/");
-  }
-}
+      // if signin was successful then we have a user
+      if (authResp.user) {
+        const idToken = await auth.currentUser.getIdToken();
+        return await sessionLogin(request, idToken, "/");
+      }
+    }
   } catch (error) {
     return { error: { message: error?.message } };
   }
@@ -102,25 +101,16 @@ export default function Login() {
   };
 
   return (
-    <div className="ui container" style={{paddingTop: 40}}>
+    <div className="ui container" style={{ paddingTop: 40 }}>
       <h3>Remix Login With Firebase, Email & Google Auth</h3>
       <Form method="post" className="ui form centered">
         <div className="field">
           <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="me@mail.com"
-            required
-          />
+          <input type="email" name="email" placeholder="me@mail.com" required />
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            name="password"
-            required
-          />
+          <input type="password" name="password" required />
         </div>
         <button
           className="ui button"
@@ -140,7 +130,7 @@ export default function Login() {
         </button>
       </Form>
       <div className="ui divider"></div>
-      <div className="ui centered grid" style={{paddingTop:16}}>
+      <div className="ui centered grid" style={{ paddingTop: 16 }}>
         <div className="six wide column">
           <Link className="ui button right floated" to="/register">
             Register

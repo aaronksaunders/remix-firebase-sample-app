@@ -1,5 +1,5 @@
 // app/sessions.js
-import { createCookie, redirect } from "@remix-run/node"; // or "@remix-run/cloudflare"
+import { redirect, createCookieSessionStorage } from "@remix-run/node"; // or "@remix-run/cloudflare"
 
 // Initialize Firebase
 // ---------------------
@@ -14,11 +14,23 @@ if (admin.apps.length === 0) {
 /**
  * setup the session cookie to be used for firebase
  */
-export const fbSessionCookie = createCookie("session", {
-  maxAge: 60 * 60 * 24 * 5 * 1000,
-  httpOnly: true,
-  secure: true,
-});
+const { getSession, commitSession, destroySession } =
+  createCookieSessionStorage({
+    // a Cookie from `createCookie` or the CookieOptions to create one
+    cookie: {
+      //firebase token
+      name: "fb:token",
+
+      // all of these are optional
+      expires: new Date(Date.now() + 600),
+      httpOnly: true,
+      maxAge: 600,
+      path: "/",
+      sameSite: "lax",
+      secrets: ["cr@z7"],
+      secure: true,
+    },
+  });
 
 /**
  * checks that the current session is a valid session be getting the token
@@ -28,14 +40,13 @@ export const fbSessionCookie = createCookie("session", {
  * @returns
  */
 export const isSessionValid = async (request, redirectTo) => {
-  const cookieHeader = request.headers.get("Cookie");
-  const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
+  const session = await getSession(request.headers.get("cookie"));
   try {
     // Verify the session cookie. In this case an additional check is added to detect
     // if the user's Firebase session was revoked, user deleted/disabled, etc.
     const decodedClaims = await admin
       .auth()
-      .verifySessionCookie(sessionCookie?.token, true /** checkRevoked */);
+      .verifySessionCookie(session.get("idToken"), true /** checkRevoked */);
     return { success: true, decodedClaims };
   } catch (error) {
     console.log(error);
@@ -54,19 +65,16 @@ export const isSessionValid = async (request, redirectTo) => {
  * @param {*} redirectTo
  * @returns
  */
-const setCookieAndRedirect = async (sessionCookie, redirectTo = "/") => {
+const setCookieAndRedirect = async (
+  request,
+  sessionCookie,
+  redirectTo = "/"
+) => {
+  const session = await getSession(request.headers.get("cookie"));
+  session.set("idToken", sessionCookie);
   return redirect(redirectTo, {
     headers: {
-      "Set-Cookie": await fbSessionCookie.serialize({
-        token: sessionCookie,
-        expires: new Date(Date.now() + 60_000),
-        httpOnly: true,
-        maxAge: 60,
-        path: "/",
-        sameSite: "lax",
-        secrets: ["s3cret1"],
-        secure: true,
-      }),
+      "Set-Cookie": await commitSession(session),
     },
   });
 };
@@ -79,7 +87,11 @@ const setCookieAndRedirect = async (sessionCookie, redirectTo = "/") => {
  * @param {*} redirectTo
  * @returns
  */
-export const sessionLogin = async (idToken, redirectTo) => {
+export const sessionLogin = async (request, idToken, redirectTo) => {
+
+  const token = await admin.auth().verifyIdToken(idToken);
+  console.log("idtoken verified", idToken)
+
   return admin
     .auth()
     .createSessionCookie(idToken, {
@@ -88,7 +100,7 @@ export const sessionLogin = async (idToken, redirectTo) => {
     .then(
       (sessionCookie) => {
         // Set cookie policy for session cookie.
-        return setCookieAndRedirect(sessionCookie, redirectTo);
+        return setCookieAndRedirect(request, sessionCookie, redirectTo);
       },
       (error) => {
         return {
@@ -104,19 +116,22 @@ export const sessionLogin = async (idToken, redirectTo) => {
  * @returns
  */
 export const sessionLogout = async (request) => {
-  const cookieHeader = request.headers.get("Cookie");
-  const sessionCookie = (await fbSessionCookie.parse(cookieHeader)) || {};
+  const session = await getSession(request.headers.get("cookie"));
 
   // Verify the session cookie. In this case an additional check is added to detect
   // if the user's Firebase session was revoked, user deleted/disabled, etc.
   return admin
     .auth()
-    .verifySessionCookie(sessionCookie?.token, true /** checkRevoked */)
+    .verifySessionCookie(session.get("idToken") , true /** checkRevoked */)
     .then((decodedClaims) => {
       return admin.auth().revokeRefreshTokens(decodedClaims?.sub);
     })
-    .then(() => {
-      return { success: true };
+    .then(async () => {
+      return redirect("/login", {
+        headers: {
+          "Set-Cookie": await destroySession(session),
+        },
+      });
     })
     .catch((error) => {
       console.log(error);

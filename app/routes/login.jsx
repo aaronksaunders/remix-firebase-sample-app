@@ -12,6 +12,7 @@ import {
   useCatch,
   useFetcher,
 } from "@remix-run/react";
+import { useRef } from "react";
 import { sessionLogin } from "../fb.sessions.server";
 
 //create a stylesheet ref for the auth.css file
@@ -20,6 +21,7 @@ export let links = () => {
 };
 
 export function ErrorBoundary({ error }) {
+  debugger;
   console.log(error);
   return (
     <div>
@@ -33,7 +35,7 @@ export function ErrorBoundary({ error }) {
 
 export function CatchBoundary() {
   const caught = useCatch();
-
+debugger;
   return (
     <div>
       <h1>Caught</h1>
@@ -54,24 +56,9 @@ export async function loader({ request }) {
 // this will sign in our firebase user and create our session and cookie using user.getIDToken()
 export let action = async ({ request }) => {
   let formData = await request.formData();
-  let email = formData.get("email");
-  let googleLogin = formData.get("google-login");
-  let password = formData.get("password");
-
-  await signOut(auth);
 
   try {
-    if (googleLogin) {
-      return await sessionLogin(request, formData.get("idToken"), "/");
-    } else {
-      const authResp = await signInWithEmailAndPassword(auth, email, password);
-
-      // if signin was successful then we have a user
-      if (authResp.user) {
-        const idToken = await auth.currentUser.getIdToken();
-        return await sessionLogin(request, idToken, "/");
-      }
-    }
+    return await sessionLogin(request, formData.get("idToken"), "/");
   } catch (error) {
     return { error: { message: error?.message } };
   }
@@ -82,10 +69,15 @@ export default function Login() {
   const actionData = useActionData();
   const fetcher = useFetcher();
 
+  // for refs
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+
   /**
    *
    */
-  const signInWithGoogle = () => {
+  const signInWithGoogle = async () => {
+    await signOut(auth);
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider)
       .then(async (res) => {
@@ -100,34 +92,66 @@ export default function Login() {
       });
   };
 
+  const signInWithEmail = async () => {
+    try {
+      debugger;
+      await signOut(auth);
+      const authResp = await signInWithEmailAndPassword(
+        auth,
+        emailRef.current.value,
+        passwordRef.current.value
+      );
+
+      // if signin was successful then we have a user
+      if (authResp.user) {
+        const idToken = await auth.currentUser.getIdToken();
+        fetcher.submit(
+          { idToken: idToken, "email-login": true },
+          { method: "post" }
+        );
+      }
+    } catch (err) {
+      console.log("signInWithEmail", err);
+    }
+  };
+
   return (
     <div className="ui container" style={{ paddingTop: 40 }}>
       <h3>Remix Login With Firebase, Email & Google Auth</h3>
       <Form method="post" className="ui form centered">
         <div className="field">
           <label htmlFor="email">Email</label>
-          <input type="email" name="email" placeholder="me@mail.com" required />
+          <input
+            type="email"
+            name="email"
+            placeholder="me@mail.com"
+            required
+            ref={emailRef}
+          />
         </div>
         <div className="field">
           <label htmlFor="password">Password</label>
-          <input type="password" name="password" required />
+          <input type="password" name="password" required ref={passwordRef} />
         </div>
         <button
           className="ui button"
           name="email-login"
-          value="true"
-          type="submit"
+          onClick={() =>  signInWithEmail()}
+          type="button"
         >
           Login With Email
         </button>
         <button
           className="ui button"
           type="button"
-          onClick={() => signInWithGoogle()}
+          onClick={ () =>  signInWithGoogle()}
         >
           <i className="icon google"></i>
           Login with Google
         </button>
+        <Link to="/login-phone" className="ui button">
+          PHONE
+        </Link>
       </Form>
       <div className="ui divider"></div>
       <div className="ui centered grid" style={{ paddingTop: 16 }}>

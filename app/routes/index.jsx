@@ -1,31 +1,36 @@
-import { useLoaderData, Form } from "@remix-run/react";
-import { json, redirect } from "@remix-run/node";
+import { useLoaderData, Form, useFetcher } from "@remix-run/react";
+import { json } from "@remix-run/node";
 
-import { auth, db } from "../firebase-service";
-import { collection, getDocs } from "firebase/firestore";
+import { auth } from "../firebase-service";
 import { isSessionValid } from "~/fb.sessions.server";
-import { getAuth } from "firebase/auth";
 import { sessionLogout } from "../fb.sessions.server";
 
 // use loader to check for existing session
 export async function loader({ request }) {
-  const { 
-    decodedClaims, 
-    error 
-  } = await isSessionValid(request, "/login");
+  const { decodedClaims, error } = await isSessionValid(request, "/login");
 
-  const querySnapshot = await getDocs(collection(db, "tryreactfire"));
+  const COLLECTION_NAME = "tryreactfire";
+  const PROJECT_ID = decodedClaims.aud;
+
+  const response = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${COLLECTION_NAME}`
+  );
+  const { documents } = await response.json();
+
+  console.log("documents", JSON.stringify(documents));
   const responseData = [];
-  querySnapshot.forEach((doc) => {
-    console.log(doc.id, " => ", doc.data());
-    responseData.push({
-      id: doc.id,
-      ...doc.data(),
-    });
+  documents.forEach((doc) => {
+    Object.keys(doc.fields).map((k) =>
+      responseData.push({
+        id: doc.name.substring(doc.name.lastIndexOf("/") + 1),
+        createTime: doc.createTime,
+        updateTime: doc.updateTime,
+        [k]: Object.values(doc.fields[k])[0],
+      })
+    );
   });
 
   const data = {
-    user: getAuth().currentUser,
     error,
     decodedClaims,
     responseData,
@@ -34,9 +39,7 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
-  await auth.signOut();
-
-return await sessionLogout(request);
+  return await sessionLogout(request);
 }
 
 // https://remix.run/api/conventions#meta
@@ -49,20 +52,27 @@ export let meta = () => {
 
 // https://remix.run/guides/routing#index-routes
 export default function Index() {
+  const logoutFetcher = useFetcher();
   const data = useLoaderData();
   let greeting = data?.decodedClaims
     ? "Logged In As: " + data?.decodedClaims?.email
     : "Log In My: friend";
+
+  console.log(data);
+
+  const logout = async () => {
+    await auth.signOut();
+    logoutFetcher.submit({}, { method: "POST" });
+  };
+
   return (
     <div className="ui container centered" style={{ paddingTop: 40 }}>
       <div className="ui segment">
         <h3>{greeting}</h3>
         <div>
-          <Form method="post">
-            <button className="ui button" type="submit">
-              LOGOUT
-            </button>
-          </Form>
+          <button className="ui button" type="button" onClick={() => logout()}>
+            LOGOUT
+          </button>
         </div>
       </div>
       <div className="ui segment">
@@ -73,9 +83,11 @@ export default function Index() {
       </div>
       <div className="ui segment">
         <div className="ui medium header">Querying Firestore Database</div>
-        {data?.responseData?.map((m) => 
-         <div className="ui segment" key={m?.id}>{m?.id} : {m?.name}</div>
-        )}
+        {data?.responseData?.map((m) => (
+          <div className="ui segment" key={m?.id}>
+            {m?.id} : {m?.name}
+          </div>
+        ))}
       </div>
     </div>
   );
